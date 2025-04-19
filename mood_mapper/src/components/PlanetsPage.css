@@ -1,0 +1,333 @@
+.planets-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+  position: relative;
+  overflow: hidden;
+}
+
+.planets-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.orbit {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform-origin: center;
+}
+
+.orbit-1 {
+  width: 200px;
+  height: 200px;
+  animation: rotate 15s linear infinite;
+}
+
+.orbit-2 {
+  width: 300px;
+  height: 300px;
+  animation: rotate 20s linear infinite;
+}
+
+.orbit-3 {
+  width: 400px;
+  height: 400px;
+  animation: rotate 25s linear infinite;
+}
+
+.orbit-4 {
+  width: 500px;
+  height: 500px;
+  animation: rotate 30s linear infinite;
+}
+
+.orbit-5 {
+  width: 600px;
+  height: 600px;
+  animation: rotate 35s linear infinite;
+}
+
+.orbit-6 {
+  width: 700px;
+  height: 700px;
+  animation: rotate 40s linear infinite;
+}
+
+.orbit-7 {
+  width: 800px;
+  height: 800px;
+  animation: rotate 45s linear infinite;
+}
+
+.orbit-8 {
+  width: 900px;
+  height: 900px;
+  animation: rotate 50s linear infinite;
+}
+
+.planet {
+  position: absolute;
+  border-radius: 50%;
+  transform-origin: center;
+  box-shadow: 
+    inset -10px -10px 20px rgba(0, 0, 0, 0.5),
+    inset 10px 10px 20px rgba(255, 255, 255, 0.3),
+    0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.planet-1 {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at 30% 30%, 
+    #a5d8ff 0%,
+    #74c0fc 30%,
+    #339af0 100%);
+  animation: orbit 15s linear infinite;
+  animation-delay: -3.75s;
+}
+
+.planet-2 {
+  width: 50px;
+  height: 50px;
+  background: radial-gradient(circle at 30% 30%, 
+    #b2f2bb 0%,
+    #8ce99a 30%,
+    #69db7c 100%);
+  animation: orbit 20s linear infinite;
+  animation-delay: -10s;
+}
+
+.planet-3 {
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle at 30% 30%, 
+    #ffd8a8 0%,
+    #ffd43b 30%,
+    #fcc419 100%);
+  animation: orbit 25s linear infinite;
+  animation-delay: -6.25s;
+}
+
+.planet-4 {
+  width: 45px;
+  height: 45px;
+  background: radial-gradient(circle at 30% 30%, 
+    #d0ebff 0%,
+    #a5d8ff 30%,
+    #74c0fc 100%);
+  animation: orbit 30s linear infinite;
+  animation-delay: -15s;
+}
+
+.planet-5 {
+  width: 55px;
+  height: 55px;
+  background: radial-gradient(circle at 30% 30%, 
+    #c3fae8 0%,
+    #96f2d7 30%,
+    #63e6be 100%);
+  animation: orbit 35s linear infinite;
+  animation-delay: -8.75s;
+}
+
+.planet-6 {
+  width: 65px;
+  height: 65px;
+  background: radial-gradient(circle at 30% 30%, 
+    #eebefa 0%,
+    #da77f2 30%,
+    #cc5de8 100%);
+  animation: orbit 40s linear infinite;
+  animation-delay: -20s;
+}
+
+.planet-7 {
+  width: 70px;
+  height: 70px;
+  background: radial-gradient(circle at 30% 30%, 
+    #ffd8a8 0%,
+    #ffd43b 20%,
+    #fcc419 40%,
+    #fab005 60%,
+    #f59f00 100%);
+  animation: orbit 45s linear infinite;
+  animation-delay: -11.25s;
+}
+
+.planet-8 {
+  width: 75px;
+  height: 75px;
+  background: radial-gradient(circle at 30% 30%, 
+    #a5d8ff 0%,
+    #74c0fc 20%,
+    #4dabf7 40%,
+    #339af0 60%,
+    #228be6 80%,
+    #1c7ed6 100%);
+  animation: orbit 50s linear infinite;
+  animation-delay: -17.5s;
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(50%) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(50%) rotate(-360deg);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.new-journey-btn {
+  position: absolute;
+  bottom: 50px;
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  z-index: 10;
+}
+
+.new-journey-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 4rem;
+  border-radius: 50%;
+  width: 800px;
+  height: 800px;
+  box-shadow: 0 0 50px rgba(255, 255, 255, 0.3),
+              0 0 100px rgba(255, 255, 255, 0.2),
+              0 0 150px rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  animation: modalAppear 0.5s ease-out;
+}
+
+@keyframes modalAppear {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modal h2 {
+  margin-bottom: 2.5rem;
+  color: #24243e;
+  text-align: center;
+  font-size: 2rem;
+}
+
+.form-group {
+  margin-bottom: 2.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 1rem;
+  color: #24243e;
+  font-weight: 500;
+  font-size: 1.2rem;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+  width: 100%;
+  padding: 1.2rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus {
+  border-color: #302b63;
+  outline: none;
+}
+
+.form-group textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.submit-btn,
+.cancel-btn {
+  padding: 1.2rem 2.5rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn {
+  background: #302b63;
+  color: white;
+  border: none;
+}
+
+.submit-btn:hover {
+  background: #24243e;
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #666;
+}
+
+.cancel-btn:hover {
+  background: #f5f5f5;
+} 
