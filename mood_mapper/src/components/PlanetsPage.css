@@ -18,61 +18,6 @@
   align-items: center;
 }
 
-.orbit {
-  position: absolute;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  transform-origin: center;
-}
-
-.orbit-1 {
-  width: 200px;
-  height: 200px;
-  animation: rotate 15s linear infinite;
-}
-
-.orbit-2 {
-  width: 300px;
-  height: 300px;
-  animation: rotate 20s linear infinite;
-}
-
-.orbit-3 {
-  width: 400px;
-  height: 400px;
-  animation: rotate 25s linear infinite;
-}
-
-.orbit-4 {
-  width: 500px;
-  height: 500px;
-  animation: rotate 30s linear infinite;
-}
-
-.orbit-5 {
-  width: 600px;
-  height: 600px;
-  animation: rotate 35s linear infinite;
-}
-
-.orbit-6 {
-  width: 700px;
-  height: 700px;
-  animation: rotate 40s linear infinite;
-}
-
-.orbit-7 {
-  width: 800px;
-  height: 800px;
-  animation: rotate 45s linear infinite;
-}
-
-.orbit-8 {
-  width: 900px;
-  height: 900px;
-  animation: rotate 50s linear infinite;
-}
-
 .planet {
   position: absolute;
   border-radius: 50%;
@@ -81,6 +26,38 @@
     inset -10px -10px 20px rgba(0, 0, 0, 0.5),
     inset 10px 10px 20px rgba(255, 255, 255, 0.3),
     0 0 20px rgba(255, 255, 255, 0.5);
+  animation: float 20s ease-in-out infinite;
+  transition: transform 0.3s ease, z-index 0.3s ease;
+  cursor: pointer;
+  will-change: transform;
+}
+
+.planet:hover {
+  animation-play-state: paused;
+  transform: scale(1.2);
+  z-index: 10;
+}
+
+.planet::after {
+  content: attr(data-title);
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%) rotate(0deg);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  transform-origin: center;
+}
+
+.planet:hover::after {
+  opacity: 1;
 }
 
 .planet-1 {
@@ -90,8 +67,10 @@
     #a5d8ff 0%,
     #74c0fc 30%,
     #339af0 100%);
-  animation: orbit 15s linear infinite;
-  animation-delay: -3.75s;
+  top: 20%;
+  left: 20%;
+  animation-delay: 0s;
+  animation-duration: 25s;
 }
 
 .planet-2 {
@@ -101,8 +80,10 @@
     #b2f2bb 0%,
     #8ce99a 30%,
     #69db7c 100%);
-  animation: orbit 20s linear infinite;
-  animation-delay: -10s;
+  top: 30%;
+  right: 25%;
+  animation-delay: -2s;
+  animation-duration: 22s;
 }
 
 .planet-3 {
@@ -112,8 +93,10 @@
     #ffd8a8 0%,
     #ffd43b 30%,
     #fcc419 100%);
-  animation: orbit 25s linear infinite;
-  animation-delay: -6.25s;
+  bottom: 25%;
+  left: 15%;
+  animation-delay: -4s;
+  animation-duration: 28s;
 }
 
 .planet-4 {
@@ -123,8 +106,10 @@
     #d0ebff 0%,
     #a5d8ff 30%,
     #74c0fc 100%);
-  animation: orbit 30s linear infinite;
-  animation-delay: -15s;
+  top: 40%;
+  right: 15%;
+  animation-delay: -6s;
+  animation-duration: 24s;
 }
 
 .planet-5 {
@@ -134,8 +119,10 @@
     #c3fae8 0%,
     #96f2d7 30%,
     #63e6be 100%);
-  animation: orbit 35s linear infinite;
-  animation-delay: -8.75s;
+  bottom: 30%;
+  right: 20%;
+  animation-delay: -8s;
+  animation-duration: 26s;
 }
 
 .planet-6 {
@@ -145,8 +132,10 @@
     #eebefa 0%,
     #da77f2 30%,
     #cc5de8 100%);
-  animation: orbit 40s linear infinite;
-  animation-delay: -20s;
+  top: 25%;
+  left: 30%;
+  animation-delay: -10s;
+  animation-duration: 23s;
 }
 
 .planet-7 {
@@ -158,8 +147,10 @@
     #fcc419 40%,
     #fab005 60%,
     #f59f00 100%);
-  animation: orbit 45s linear infinite;
-  animation-delay: -11.25s;
+  bottom: 20%;
+  right: 30%;
+  animation-delay: -12s;
+  animation-duration: 27s;
 }
 
 .planet-8 {
@@ -172,25 +163,27 @@
     #339af0 60%,
     #228be6 80%,
     #1c7ed6 100%);
-  animation: orbit 50s linear infinite;
-  animation-delay: -17.5s;
+  top: 35%;
+  left: 25%;
+  animation-delay: -14s;
+  animation-duration: 21s;
 }
 
-@keyframes orbit {
-  from {
-    transform: rotate(0deg) translateX(50%) rotate(0deg);
+@keyframes float {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
   }
-  to {
-    transform: rotate(360deg) translateX(50%) rotate(-360deg);
+  25% {
+    transform: translate(50px, -50px) rotate(90deg);
   }
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
+  50% {
+    transform: translate(0, -100px) rotate(180deg);
   }
-  to {
-    transform: rotate(360deg);
+  75% {
+    transform: translate(-50px, -50px) rotate(270deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(360deg);
   }
 }
 
@@ -232,16 +225,15 @@
 
 .modal {
   background: rgba(255, 255, 255, 0.95);
-  padding: 4rem;
-  border-radius: 50%;
-  width: 800px;
-  height: 800px;
+  padding: 2rem;
+  border-radius: 20px;
+  width: 600px;
+  max-width: 90%;
   box-shadow: 0 0 50px rgba(255, 255, 255, 0.3),
               0 0 100px rgba(255, 255, 255, 0.2),
               0 0 150px rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-  justify-content: center;
   animation: modalAppear 0.5s ease-out;
 }
 
@@ -257,14 +249,14 @@
 }
 
 .modal h2 {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   color: #24243e;
   text-align: center;
   font-size: 2rem;
 }
 
 .form-group {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
 .form-group label {
@@ -296,15 +288,59 @@
   resize: vertical;
 }
 
+.photo-upload-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.photo-square {
+  width: 150px;
+  height: 150px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-square:hover {
+  border-color: #302b63;
+}
+
+.photo-square.plus {
+  background: #f5f5f5;
+}
+
+.photo-square.plus::before {
+  content: '+';
+  font-size: 3rem;
+  color: #666;
+}
+
+.photo-square img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .modal-buttons {
   display: flex;
   justify-content: center;
-  gap: 2rem;
-  margin-top: 3rem;
+  gap: 1rem;
+  margin-top: 2rem;
 }
 
 .submit-btn,
-.cancel-btn {
+.cancel-btn,
+.edit-btn,
+.delete-btn {
   padding: 1.2rem 2.5rem;
   border-radius: 8px;
   font-size: 1.2rem;
@@ -330,4 +366,42 @@
 
 .cancel-btn:hover {
   background: #f5f5f5;
-} 
+}
+
+.edit-btn {
+  background: #4dabf7;
+  color: white;
+  border: none;
+}
+
+.edit-btn:hover {
+  background: #339af0;
+}
+
+.delete-btn {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+}
+
+.delete-btn:hover {
+  background: #fa5252;
+}
+
+/* Planet positioning classes */
+.top-20 { top: 20%; }
+.top-25 { top: 25%; }
+.top-30 { top: 30%; }
+.top-35 { top: 35%; }
+.top-40 { top: 40%; }
+.bottom-20 { bottom: 20%; }
+.bottom-25 { bottom: 25%; }
+.bottom-30 { bottom: 30%; }
+.left-15 { left: 15%; }
+.left-20 { left: 20%; }
+.left-25 { left: 25%; }
+.left-30 { left: 30%; }
+.right-15 { right: 15%; }
+.right-20 { right: 20%; }
+.right-25 { right: 25%; }
+.right-30 { right: 30%; } 
