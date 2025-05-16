@@ -58,6 +58,8 @@ MoodMapper is an interactive web-based travel journal that blends emotion, memor
 
 # Weekly Progress
 - 4/18: Set up the initial React project environment. Build the homepage layout and entry modal.
+- 4/25: Build journey creation flow.
+- 5/16: Build journey summary flow.
 
 # How to Run
 ### Prerequisites
