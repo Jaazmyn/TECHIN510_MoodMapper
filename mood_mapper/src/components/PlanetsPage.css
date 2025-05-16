@@ -229,6 +229,8 @@
   border-radius: 20px;
   width: 600px;
   max-width: 90%;
+  height: 80vh;
+  max-height: 800px;
   box-shadow: 0 0 50px rgba(255, 255, 255, 0.3),
               0 0 100px rgba(255, 255, 255, 0.2),
               0 0 150px rgba(255, 255, 255, 0.1);
@@ -249,19 +251,52 @@
 }
 
 .modal h2 {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   color: #24243e;
   text-align: center;
   font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.modal form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 1rem;
+  margin-right: -1rem;
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .form-group {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   color: #24243e;
   font-weight: 500;
   font-size: 1.2rem;
@@ -270,10 +305,10 @@
 .form-group input[type="text"],
 .form-group textarea {
   width: 100%;
-  padding: 1.2rem;
+  padding: 1rem;
   border: 1px solid #ddd;
   border-radius: 8px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   transition: border-color 0.3s ease;
 }
 
@@ -284,20 +319,20 @@
 }
 
 .form-group textarea {
-  min-height: 150px;
-  resize: vertical;
+  min-height: 120px;
+  resize: none;
 }
 
 .photo-upload-container {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .photo-square {
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   border: 2px dashed #ddd;
   border-radius: 8px;
   display: flex;
@@ -308,6 +343,7 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .photo-square:hover {
@@ -320,7 +356,7 @@
 
 .photo-square.plus::before {
   content: '+';
-  font-size: 3rem;
+  font-size: 2.5rem;
   color: #666;
 }
 
@@ -334,18 +370,22 @@
   display: flex;
   justify-content: center;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  flex-shrink: 0;
 }
 
 .submit-btn,
 .cancel-btn,
 .edit-btn,
 .delete-btn {
-  padding: 1.2rem 2.5rem;
+  padding: 1rem 2rem;
   border-radius: 8px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-width: 120px;
 }
 
 .submit-btn {

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './PlanetsPage.css';
 import { addJourney, getAllJourneys, getJourney, updateJourney, deleteJourney } from '../db';
+import SummaryButton from './SummaryButton';
 
 const PlanetsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,6 +110,25 @@ const PlanetsPage = () => {
     return positions[index % positions.length];
   };
 
+  const getAllJourneyPhotos = () => {
+    console.log('Getting all journey photos from journeys:', journeys);
+    const photos = journeys.reduce((photos, journey) => {
+      if (journey.photos && Array.isArray(journey.photos)) {
+        // Convert File objects to URLs if needed
+        const journeyPhotos = journey.photos.map(photo => {
+          if (photo instanceof File) {
+            return URL.createObjectURL(photo);
+          }
+          return photo;
+        });
+        return [...photos, ...journeyPhotos];
+      }
+      return photos;
+    }, []);
+    console.log('Collected photos:', photos);
+    return photos;
+  };
+
   return (
     <div className="planets-page">
       <div className="planets-container">
@@ -127,6 +147,14 @@ const PlanetsPage = () => {
         >
           New Journey
         </button>
+
+        <SummaryButton 
+          planets={journeys.map(journey => ({
+            title: journey.title,
+            color: getPlanetClass(journeys.indexOf(journey))
+          }))}
+          journeyPhotos={getAllJourneyPhotos()}
+        />
       </div>
 
       {isModalOpen && (
@@ -134,52 +162,54 @@ const PlanetsPage = () => {
           <div className="modal">
             <h2>Create New Journey</h2>
             <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="title">Title</label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="description">Description</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Photos</label>
-                <div className="photo-upload-container">
-                  {formData.photos.map((photo, index) => (
-                    <div key={index} className="photo-square">
-                      <img 
-                        src={URL.createObjectURL(photo)} 
-                        alt={`Uploaded photo ${index + 1}`}
-                      />
-                    </div>
-                  ))}
-                  <div 
-                    className="photo-square plus"
-                    onClick={handlePhotoClick}
-                  />
+              <div className="modal-content">
+                <div className="form-group">
+                  <label htmlFor="title">Title</label>
                   <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    style={{ display: 'none' }}
-                    multiple
+                    type="text"
+                    id="title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    required
                   />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="description">Description</label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Photos</label>
+                  <div className="photo-upload-container">
+                    {formData.photos.map((photo, index) => (
+                      <div key={index} className="photo-square">
+                        <img 
+                          src={URL.createObjectURL(photo)} 
+                          alt={`Uploaded photo ${index + 1}`}
+                        />
+                      </div>
+                    ))}
+                    <div 
+                      className="photo-square plus"
+                      onClick={handlePhotoClick}
+                    />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      style={{ display: 'none' }}
+                      multiple
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -205,52 +235,54 @@ const PlanetsPage = () => {
               <>
                 <h2>Edit Journey</h2>
                 <form onSubmit={handleUpdate}>
-                  <div className="form-group">
-                    <label htmlFor="edit-title">Title</label>
-                    <input
-                      type="text"
-                      id="edit-title"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="edit-description">Description</label>
-                    <textarea
-                      id="edit-description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Photos</label>
-                    <div className="photo-upload-container">
-                      {formData.photos.map((photo, index) => (
-                        <div key={index} className="photo-square">
-                          <img 
-                            src={URL.createObjectURL(photo)} 
-                            alt={`Uploaded photo ${index + 1}`}
-                          />
-                        </div>
-                      ))}
-                      <div 
-                        className="photo-square plus"
-                        onClick={handlePhotoClick}
-                      />
+                  <div className="modal-content">
+                    <div className="form-group">
+                      <label htmlFor="edit-title">Title</label>
                       <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        style={{ display: 'none' }}
-                        multiple
+                        type="text"
+                        id="edit-title"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        required
                       />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label htmlFor="edit-description">Description</label>
+                      <textarea
+                        id="edit-description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Photos</label>
+                      <div className="photo-upload-container">
+                        {formData.photos.map((photo, index) => (
+                          <div key={index} className="photo-square">
+                            <img 
+                              src={URL.createObjectURL(photo)} 
+                              alt={`Uploaded photo ${index + 1}`}
+                            />
+                          </div>
+                        ))}
+                        <div 
+                          className="photo-square plus"
+                          onClick={handlePhotoClick}
+                        />
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          style={{ display: 'none' }}
+                          multiple
+                        />
+                      </div>
                     </div>
                   </div>
                   
@@ -276,24 +308,26 @@ const PlanetsPage = () => {
             ) : (
               <>
                 <h2>{selectedJourney.title}</h2>
-                <div className="form-group">
-                  <p>{selectedJourney.description}</p>
-                </div>
-                {selectedJourney.photos && selectedJourney.photos.length > 0 && (
+                <div className="modal-content">
                   <div className="form-group">
-                    <label>Photos</label>
-                    <div className="photo-upload-container">
-                      {selectedJourney.photos.map((photo, index) => (
-                        <div key={index} className="photo-square">
-                          <img 
-                            src={URL.createObjectURL(photo)} 
-                            alt={`Journey photo ${index + 1}`}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    <p>{selectedJourney.description}</p>
                   </div>
-                )}
+                  {selectedJourney.photos && selectedJourney.photos.length > 0 && (
+                    <div className="form-group">
+                      <label>Photos</label>
+                      <div className="photo-upload-container">
+                        {selectedJourney.photos.map((photo, index) => (
+                          <div key={index} className="photo-square">
+                            <img 
+                              src={URL.createObjectURL(photo)} 
+                              alt={`Journey photo ${index + 1}`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <div className="modal-buttons">
                   <button 
                     type="button" 
