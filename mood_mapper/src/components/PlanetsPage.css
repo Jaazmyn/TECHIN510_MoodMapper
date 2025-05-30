@@ -1,12 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Ledger&display=swap');
+
+.ledger-regular {
+  font-family: "Ledger", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
 .planets-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+  /* Multi-stop, cosmic-inspired gradient */
+  background: radial-gradient(circle at 60% 40%, rgba(255, 140, 60, 0.25) 0%, rgba(40, 80, 180, 0.18) 30%, rgba(0, 30, 60, 0.7) 60%, #0a0a2a 80%, #000 100%),
+    linear-gradient(120deg, #0a0a2a 0%, #1a223f 40%, #2e2e38 70%, #0a0a2a 100%);
   position: relative;
   overflow: hidden;
+  font-family: 'Ledger', serif;
+}
+
+.planets-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Radial glow for depth */
+  background: radial-gradient(circle at 60% 40%, rgba(255, 180, 80, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.planets-page::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* SVG noise for grain */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Remove the grid and star-grid classes */
+.star-grid {
+  display: none !important;
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: white;
+  border-radius: 50%;
+  animation: twinkle 4s infinite;
+  z-index: 3;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 
 .planets-container {
@@ -25,11 +84,13 @@
   box-shadow: 
     inset -10px -10px 20px rgba(0, 0, 0, 0.5),
     inset 10px 10px 20px rgba(255, 255, 255, 0.3),
-    0 0 20px rgba(255, 255, 255, 0.5);
+    0 0 30px rgba(255, 255, 255, 0.3),
+    0 0 60px rgba(255, 255, 255, 0.1);
   animation: float 20s ease-in-out infinite;
   transition: transform 0.3s ease, z-index 0.3s ease;
   cursor: pointer;
   will-change: transform;
+  filter: blur(0.5px);
 }
 
 .planet:hover {
@@ -171,25 +232,30 @@
 
 @keyframes float {
   0% {
-    transform: translate(0, 0) rotate(0deg);
+    transform: translate(0, 0);
   }
   25% {
-    transform: translate(50px, -50px) rotate(90deg);
+    transform: translate(50px, -50px);
   }
   50% {
-    transform: translate(0, -100px) rotate(180deg);
+    transform: translate(0, -100px);
   }
   75% {
-    transform: translate(-50px, -50px) rotate(270deg);
+    transform: translate(-50px, -50px);
   }
   100% {
-    transform: translate(0, 0) rotate(360deg);
+    transform: translate(0, 0);
   }
 }
 
 .new-journey-btn {
-  position: absolute;
-  bottom: 50px;
+  position: relative;
+  display: block;
+  margin: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  float: none;
   padding: 15px 30px;
   font-size: 1.2rem;
   background: rgba(255, 255, 255, 0.1);
@@ -197,15 +263,19 @@
   border-radius: 25px;
   color: white;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(.4,2,.6,1);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2), 0 0 40px rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
   z-index: 10;
+  font-family: 'Ledger', serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .new-journey-btn:hover {
   background: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.3), 0 0 60px rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
@@ -256,6 +326,9 @@
   text-align: center;
   font-size: 2rem;
   flex-shrink: 0;
+  font-family: 'Ledger', serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 .modal form {
@@ -300,6 +373,9 @@
   color: #24243e;
   font-weight: 500;
   font-size: 1.2rem;
+  font-family: 'Ledger', serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .form-group input[type="text"],
@@ -444,4 +520,208 @@
 .right-15 { right: 15%; }
 .right-20 { right: 20%; }
 .right-25 { right: 25%; }
-.right-30 { right: 30%; } 
+.right-30 { right: 30%; }
+
+.new-journey-panel {
+  position: relative;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin: 0 auto 0 auto;
+  min-width: 340px;
+  width: 380px;
+  max-width: 90vw;
+  background: rgba(30, 40, 80, 0.85);
+  border-radius: 28px;
+  box-shadow: 0 0 40px 8px rgba(120,180,255,0.13), 0 0 0 2px rgba(255,255,255,0.08) inset;
+  backdrop-filter: blur(16px);
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 2.2rem 2rem 1.5rem 2rem;
+  z-index: 30;
+  opacity: 0;
+  transform: scale(0.85) translateY(30px);
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(.4,2,.6,1), transform 0.35s cubic-bezier(.4,2,.6,1);
+}
+
+.new-journey-panel.open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+}
+
+.close-panel-btn {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  opacity: 0.7;
+  cursor: pointer;
+  z-index: 2;
+  transition: opacity 0.2s;
+}
+.close-panel-btn:hover { opacity: 1; }
+
+.panel-title-input {
+  font-family: 'Ledger', serif;
+  font-size: 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255,255,255,0.18);
+  color: #fff;
+  margin-bottom: 1.2rem;
+  padding: 0.5rem 0 0.5rem 0.2rem;
+  outline: none;
+  width: 100%;
+  letter-spacing: 1px;
+  transition: border-color 0.2s;
+}
+.panel-title-input:focus {
+  border-bottom: 2px solid #8ecaff;
+}
+
+.panel-photo-row {
+  display: flex;
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
+  justify-content: flex-start;
+}
+
+.panel-photo-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,255,255,0.13);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 12px 2px rgba(120,180,255,0.08);
+}
+.panel-photo-box:hover {
+  border-color: #8ecaff;
+  box-shadow: 0 0 18px 4px rgba(120,180,255,0.13);
+}
+.panel-photo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.panel-camera-icon {
+  font-size: 1.7rem;
+  color: #8ecaff;
+  opacity: 0.8;
+}
+
+.panel-description-input {
+  font-family: 'Ledger', serif;
+  font-size: 1.08rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255,255,255,0.13);
+  color: #fff;
+  margin-bottom: 1.3rem;
+  padding: 0.7rem 0 0.7rem 0.2rem;
+  outline: none;
+  width: 100%;
+  min-height: 80px;
+  resize: none;
+  letter-spacing: 0.5px;
+  transition: border-color 0.2s;
+}
+.panel-description-input:focus {
+  border-bottom: 2px solid #8ecaff;
+}
+
+.panel-save-btn {
+  font-family: 'Ledger', serif;
+  font-size: 1.1rem;
+  background: rgba(120,180,255,0.13);
+  color: #fff;
+  border: none;
+  border-radius: 18px;
+  padding: 0.7rem 2.2rem;
+  margin-top: 0.5rem;
+  align-self: center;
+  box-shadow: 0 0 10px 2px rgba(120,180,255,0.10);
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.2s, box-shadow 0.2s;
+  min-width: 120px;
+  white-space: nowrap;
+}
+.panel-save-btn:hover {
+  background: rgba(120,180,255,0.22);
+  box-shadow: 0 0 18px 4px rgba(120,180,255,0.18);
+}
+
+.planet-label {
+  position: absolute;
+  left: 50%;
+  bottom: -38px;
+  transform: translateX(-50%) rotate(0deg) !important;
+  background: rgba(30, 40, 80, 0.92);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: 'Ledger', serif;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s, bottom 0.3s;
+  z-index: 100;
+  box-shadow: 0 2px 12px 2px rgba(120,180,255,0.10);
+  font-weight: 500;
+}
+.planet:hover .planet-label,
+.planet-label.show {
+  opacity: 1;
+  bottom: -48px;
+}
+
+.icon-cosmic-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(30, 40, 80, 0.18);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  box-shadow:
+    0 0 18px 4px rgba(120,180,255,0.13),
+    0 0 0 2px rgba(255,255,255,0.08) inset;
+  filter: blur(0.1px);
+  transition: box-shadow 0.2s, background 0.2s, transform 0.2s;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+.icon-cosmic-btn:hover {
+  background: rgba(120, 180, 255, 0.18);
+  box-shadow:
+    0 0 28px 8px rgba(120,180,255,0.18),
+    0 0 0 2.5px rgba(255,255,255,0.12) inset;
+  transform: scale(1.08);
+}
+
+.icon-cosmic-btn svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+} 

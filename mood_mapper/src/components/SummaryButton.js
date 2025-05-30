@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaPlay, FaDownload, FaTimes } from 'react-icons/fa';
+import { FaDownload, FaTimes } from 'react-icons/fa';
 import './SummaryButton.css';
 
 const SummaryButton = ({ planets, journeyPhotos }) => {
@@ -266,7 +266,9 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
         onClick={generateSummary}
         disabled={isGenerating}
       >
-        <FaPlay />
+        <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <polygon points="10,7 25,16 10,25" stroke="white" strokeWidth="2.5" fill="none" strokeLinejoin="round" style={{ opacity: 0.7 }} />
+        </svg>
       </button>
       
       {summaryImage && (
