@@ -231,7 +231,13 @@ const PlanetsPage = () => {
             ref={buttonRef}
             className="new-journey-btn"
             onClick={openNewJourneyPanel}
-            style={{ display: isPanelOpen ? 'none' : 'block', whiteSpace: 'nowrap', pointerEvents: isPanelOpen ? 'none' : 'auto', alignSelf: 'center' }}
+            style={{
+              whiteSpace: 'nowrap',
+              pointerEvents: isPanelOpen ? 'none' : 'auto',
+              alignSelf: 'center',
+              opacity: isPanelOpen ? 0.5 : 1,
+              cursor: isPanelOpen ? 'not-allowed' : 'pointer'
+            }}
           >
             New Journey
           </button>
@@ -253,9 +259,8 @@ const PlanetsPage = () => {
             display: isPanelOpen ? 'flex' : 'none',
             position: 'fixed',
             left: '50%',
-            bottom: 40,
+            bottom: '140px', // Increased from 100px to 140px for more spacing
             transform: 'translateX(-50%)',
-            marginBottom: 0,
             pointerEvents: isPanelOpen ? 'auto' : 'none',
             zIndex: 40
           }}

@@ -523,11 +523,6 @@
 .right-30 { right: 30%; }
 
 .new-journey-panel {
-  position: relative;
-  left: 0;
-  right: 0;
-  bottom: 100%;
-  margin: 0 auto 0 auto;
   min-width: 340px;
   width: 380px;
   max-width: 90vw;
