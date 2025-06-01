@@ -1,11 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { FaDownload, FaTimes, FaPlay } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
 import './SummaryButton.css';
 
 const SummaryButton = ({ planets, journeyPhotos }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [summaryImage, setSummaryImage] = useState(null);
   const canvasRef = useRef(null);
+  const { currentUser } = useAuth();
 
   const generateSummary = async () => {
     setIsGenerating(true);
@@ -21,7 +23,7 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
       canvas.height = canvasHeight;
 
       // Define layout dimensions
-      const separatorX = canvasWidth * 0.6; // 60% for left, 40% for right
+      const separatorX = canvasWidth * 0.6 + 30; // Moved right by 30px
       const leftSectionWidth = separatorX;
       const rightSectionWidth = canvasWidth - separatorX;
       const padding = 40; // Horizontal padding
@@ -46,11 +48,11 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
 
       // User name with smaller and thinner font
       ctx.font = '300 20px "Ledger", serif'; // Reduced size and made thinner
-      ctx.fillText('User Name', padding, startY + 3 * lineHeight);
+      ctx.fillText(currentUser?.username || 'User Name', padding, startY + 3 * lineHeight);
 
       // Draw tilted elliptical orbit and planets
       // Orbit parameters - adjusted for top-right to bottom-left orientation
-      const orbitCenterX = leftSectionWidth / 2;
+      const orbitCenterX = leftSectionWidth / 2 + 30; // Moved right by 30px
       const orbitCenterY = canvasHeight * 0.6;
       const orbitRadiusX = 200;
       const orbitRadiusY = 120;
@@ -72,7 +74,7 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
 
       // Draw planets on orbit with varied size and asymmetry
       const planetsToDraw = planets.slice(0, 8);
-      planetsToDraw.forEach((planet, index) => {
+      for (const [index, planet] of planetsToDraw.entries()) {
         let angle;
         if (planetsToDraw.length <= 1) {
           angle = Math.PI / 2;
@@ -86,8 +88,8 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
         const y = orbitCenterY + orbitRadiusX * Math.cos(angle) * Math.sin(orbitTiltAngle) + orbitRadiusY * Math.sin(angle) * Math.cos(orbitTiltAngle);
 
         const size = 20 + Math.sin(angle * 2) * 10 + (index % 2) * 5;
-        drawPlanet(ctx, x, y, size, planet.color);
-      });
+        await drawPlanet(ctx, x, y, size, planet.class);
+      }
 
       // --- Right Section: Featured Journeys ---
 
@@ -106,8 +108,8 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
 
       // Draw three trips on the right with adjusted photo dimensions
       const featuredTrips = planets.slice(0, 3);
-      const startX = separatorX + padding; // Using the same padding as left section
-      const startYTrips = firstPhotoY;
+      const startX = separatorX + padding + 10;
+      const startYTrips = firstPhotoY - 10; // Moved up by 10px
       const tripSpacingY = tripHeight;
       const photoWidth = 200;
       const photoHeight = 127;
@@ -123,24 +125,30 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
           img.src = typeof photo === 'string' ? photo : URL.createObjectURL(photo);
           await new Promise((resolve, reject) => {
             img.onload = () => {
-              // Calculate dimensions to maintain aspect ratio
+              // Create clip path for the photo frame
+              ctx.save();
+              ctx.beginPath();
+              ctx.rect(startX, y, photoWidth, photoHeight);
+              ctx.clip();
+
+              // Calculate dimensions to fill the frame while maintaining aspect ratio
               const aspectRatio = img.width / img.height;
               let drawWidth = photoWidth;
               let drawHeight = photoHeight;
               
               if (aspectRatio > photoWidth / photoHeight) {
-                // Image is wider than target ratio
-                drawHeight = photoWidth / aspectRatio;
-              } else {
-                // Image is taller than target ratio
+                // Image is wider than target ratio - fit to height and crop width
                 drawWidth = photoHeight * aspectRatio;
+                const xOffset = startX + (photoWidth - drawWidth) / 2;
+                ctx.drawImage(img, xOffset, y, drawWidth, photoHeight);
+              } else {
+                // Image is taller than target ratio - fit to width and crop height
+                drawHeight = photoWidth / aspectRatio;
+                const yOffset = y + (photoHeight - drawHeight) / 2;
+                ctx.drawImage(img, startX, yOffset, photoWidth, drawHeight);
               }
               
-              // Center the image in the target area
-              const xOffset = startX + (photoWidth - drawWidth) / 2;
-              const yOffset = y + (photoHeight - drawHeight) / 2;
-              
-              ctx.drawImage(img, xOffset, yOffset, drawWidth, drawHeight);
+              ctx.restore();
               resolve();
             };
             img.onerror = reject;
@@ -211,27 +219,78 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
     }
   };
 
-  const drawPlanet = (ctx, x, y, size, planetClass) => {
-    const gradient = ctx.createRadialGradient(
-      x - size/3, y - size/3, 0,
-      x, y, size
-    );
+  const drawPlanet = async (ctx, x, y, size, planetClass) => {
+    // Get planet number from class
+    const planetNumber = parseInt(planetClass.split('-')[1]);
+
+    // Load planet image from public folder
+    const img = new Image();
+    img.src = `/p${planetNumber}.png`;
     
-    const colors = getPlanetGradient(planetClass);
-    colors.forEach((color, i) => {
-      gradient.addColorStop(i / (colors.length - 1), color);
+    await new Promise((resolve, reject) => {
+      img.onload = () => {
+        // Draw circular clip path
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.clip();
+        
+        // Calculate dimensions to maintain aspect ratio
+        const aspectRatio = img.width / img.height;
+        let drawWidth = size * 2;
+        let drawHeight = size * 2;
+        
+        if (aspectRatio > 1) {
+          // Image is wider than tall
+          drawHeight = drawWidth / aspectRatio;
+        } else {
+          // Image is taller than wide
+          drawWidth = drawHeight * aspectRatio;
+        }
+        
+        // Center the image
+        const xOffset = x - drawWidth / 2;
+        const yOffset = y - drawHeight / 2;
+        
+        ctx.drawImage(img, xOffset, yOffset, drawWidth, drawHeight);
+        ctx.restore();
+        
+        // Add glow
+        ctx.shadowColor = 'rgba(120, 180, 255, 0.4)';
+        ctx.shadowBlur = size * 0.8;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        
+        resolve();
+      };
+      img.onerror = () => {
+        // Fallback to gradient if image fails to load
+        const gradient = ctx.createRadialGradient(
+          x - size/3, y - size/3, 0,
+          x, y, size
+        );
+        
+        const colors = getPlanetGradient(planetClass);
+        colors.forEach((color, i) => {
+          gradient.addColorStop(i / (colors.length - 1), color);
+        });
+        
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // Add glow
+        ctx.shadowColor = 'rgba(120, 180, 255, 0.4)';
+        ctx.shadowBlur = size * 0.8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        resolve();
+      };
     });
-    
-    ctx.beginPath();
-    ctx.arc(x, y, size, 0, Math.PI * 2);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    
-    // Add glow
-    ctx.shadowColor = 'rgba(120, 180, 255, 0.4)'; // Adjusted glow color
-    ctx.shadowBlur = size * 0.8; // Adjusted glow blur
-    ctx.fill(); // Apply shadow
-    ctx.shadowBlur = 0; // Reset shadow
   };
 
   const getPlanetGradient = (planetClass) => {
@@ -245,9 +304,6 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
       'planet-7': ['#ffd8a8', '#ffd43b', '#fcc419', '#fab005', '#f59f00'],
       'planet-8': ['#a5d8ff', '#74c0fc', '#4dabf7', '#339af0', '#228be6', '#1c7ed6']
     };
-    if (typeof planetClass === 'number') {
-         return gradients[`planet-${(planetClass % 8) + 1}`] || gradients['planet-1'];
-    }
     return gradients[planetClass] || ['#ffffff', '#cccccc', '#999999'];
   };
 
