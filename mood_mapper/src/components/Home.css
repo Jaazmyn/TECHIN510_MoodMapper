@@ -1,0 +1,126 @@
+.planets-page {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  overflow: hidden;
+}
+
+.planets-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.planet {
+  position: absolute;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  z-index: 20;
+  border-radius: 50%;
+  animation: float 6s infinite ease-in-out;
+}
+
+.planet:hover {
+  transform: scale(1.1);
+}
+
+.planet-label {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.planet-label.show {
+  opacity: 1;
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: white;
+  border-radius: 50%;
+  animation: twinkle 4s infinite;
+  z-index: 3;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+/* Planet positions */
+.top-20 { top: 20%; }
+.top-25 { top: 25%; }
+.top-30 { top: 30%; }
+.top-35 { top: 35%; }
+.top-40 { top: 40%; }
+
+.bottom-20 { bottom: 20%; }
+.bottom-25 { bottom: 25%; }
+.bottom-30 { bottom: 30%; }
+
+.left-15 { left: 15%; }
+.left-20 { left: 20%; }
+.left-25 { left: 25%; }
+.left-30 { left: 30%; }
+
+.right-15 { right: 15%; }
+.right-20 { right: 20%; }
+.right-25 { right: 25%; }
+.right-30 { right: 30%; }
+
+/* Planet styles */
+.planet-1 { width: 65px; height: 65px; animation-delay: 0s; background-image: url('../../public/p1.png'); }
+.planet-2 { width: 85px; height: 85px; animation-delay: 0.5s; background-image: url('../../public/p2.png'); }
+.planet-3 { width: 45px; height: 45px; animation-delay: 1s; background-image: url('../../public/p3.png'); }
+.planet-4 { width: 75px; height: 75px; animation-delay: 1.5s; background-image: url('../../public/p4.png'); }
+.planet-5 { width: 95px; height: 95px; animation-delay: 2s; background-image: url('../../public/p5.png'); }
+.planet-6 { width: 35px; height: 35px; animation-delay: 2.5s; background-image: url('../../public/p6.png'); }
+.planet-7 { width: 55px; height: 55px; animation-delay: 3s; background-image: url('../../public/p7.png'); }
+.planet-8 { width: 25px; height: 25px; animation-delay: 3.5s; background-image: url('../../public/p8.png'); }
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(3deg);
+  }
+}
+
+.logout-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  color: white;
+  padding: 10px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+} 

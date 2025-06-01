@@ -2,7 +2,23 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import './PlanetsPage.css';
 import { addJourney, getAllJourneys, getJourney, updateJourney, deleteJourney } from '../db';
 import SummaryButton from './SummaryButton';
-import { FaCamera, FaTimes, FaPen, FaTrash } from 'react-icons/fa';
+import { FaCamera, FaTimes, FaPen, FaTrash, FaSignOutAlt } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  getDoc 
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import { handleError } from '../utils/errorHandling';
+import { useNavigate } from 'react-router-dom';
+import './Home.css';
 
 const PlanetsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,6 +43,10 @@ const PlanetsPage = () => {
   const detailPanelRef = useRef(null);
   const [panelPos, setPanelPos] = useState({ left: '50%', bottom: 120 });
   const [pendingPanelAlign, setPendingPanelAlign] = useState(false);
+  const [error, setError] = useState('');
+
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadJourneys();
@@ -55,10 +75,75 @@ const PlanetsPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isViewPanelOpen]);
 
-  const loadJourneys = async () => {
-    const loadedJourneys = await getAllJourneys();
-    setJourneys(loadedJourneys);
+  useEffect(() => {
+    // Log authentication state
+    console.log('Current user:', currentUser);
+    if (currentUser) {
+      console.log('User ID:', currentUser.uid);
+      console.log('User email:', currentUser.email);
+    } else {
+      console.log('No user logged in');
+    }
+  }, [currentUser]);
+
+  const getJourney = async (journeyId) => {
+    try {
+      const journeyRef = doc(db, 'journeys', journeyId);
+      const journeyDoc = await getDoc(journeyRef);
+      if (journeyDoc.exists()) {
+        return { id: journeyDoc.id, ...journeyDoc.data() };
+      }
+      throw new Error('Journey not found');
+    } catch (error) {
+      handleError(error, setError);
+      return null;
+    }
   };
+
+  const loadJourneys = async () => {
+    try {
+      if (!currentUser) {
+        console.log('No user logged in, skipping journey load');
+        return;
+      }
+
+      console.log('Loading journeys for user:', currentUser.uid);
+      setError('');
+      
+      // Query journeys for current user
+      const journeysRef = collection(db, 'journeys');
+      const q = query(journeysRef, where('userId', '==', currentUser.uid));
+      
+      try {
+        const querySnapshot = await getDocs(q);
+        const loadedJourneys = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        console.log('Loaded journeys:', loadedJourneys);
+        setJourneys(loadedJourneys);
+      } catch (firestoreError) {
+        console.error('Firestore error:', firestoreError);
+        throw new Error('Failed to load journeys. Please check your internet connection and try again.');
+      }
+    } catch (error) {
+      console.error('Error loading journeys:', error);
+      setError('Error loading journeys. Please refresh the page.');
+    }
+  };
+
+  // Add debug logging for journeys state
+  useEffect(() => {
+    console.log('Current journeys state:', journeys);
+  }, [journeys]);
+
+  // Load journeys when component mounts and when user changes
+  useEffect(() => {
+    if (currentUser) {
+      loadJourneys();
+    }
+  }, [currentUser]);
 
   const createStars = () => {
     const starsContainer = document.querySelector('.planets-page');
@@ -79,9 +164,102 @@ const PlanetsPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const getImageUrl = (photo) => {
+    if (!photo) return null;
+    // If it's a base64 string (starts with data:)
+    if (typeof photo === 'string' && photo.startsWith('data:')) {
+      return photo;
+    }
+    // If it's a File object
+    if (photo instanceof File) {
+      return URL.createObjectURL(photo);
+    }
+    // If it's a URL string
+    if (typeof photo === 'string') {
+      return photo;
+    }
+    return null;
+  };
+
+  const getAllJourneyPhotos = () => {
+    if (!journeys || journeys.length === 0) return [];
+    
+    const photos = journeys.reduce((photos, journey) => {
+      if (journey.photos && Array.isArray(journey.photos)) {
+        return [...photos, ...journey.photos];
+      }
+      return photos;
+    }, []);
+    
+    return photos;
+  };
+
+  const compressImage = async (base64String) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64String;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to JPEG with 0.7 quality
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(compressedBase64);
+      };
+    });
+  };
+
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files).slice(0, 4);
-    setFormData(prev => ({ ...prev, photos: files }));
+    if (files.length === 0) return;
+
+    // Convert files to base64 strings and compress
+    const processFiles = async () => {
+      try {
+        const processedFiles = await Promise.all(
+          files.map(async file => {
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = async () => {
+                try {
+                  const compressedImage = await compressImage(reader.result);
+                  resolve(compressedImage);
+                } catch (error) {
+                  reject(error);
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+          })
+        );
+        setFormData(prev => ({ ...prev, photos: processedFiles }));
+      } catch (error) {
+        console.error('Error processing files:', error);
+        setError('Error processing photos. Please try again.');
+      }
+    };
+    processFiles();
   };
 
   const handlePhotoClick = () => {
@@ -90,10 +268,58 @@ const PlanetsPage = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    await addJourney(formData);
-    await loadJourneys();
-    setFormData({ title: '', description: '', photos: [] });
-    setIsPanelOpen(false);
+    
+    try {
+      setError('');
+      
+      // Check authentication
+      if (!currentUser) {
+        throw new Error('You must be logged in to create a journey');
+      }
+
+      console.log('Attempting to save journey for user:', currentUser.uid);
+
+      // Validate form data
+      if (!formData.title.trim()) {
+        throw new Error('Please enter a title');
+      }
+      if (!formData.description.trim()) {
+        throw new Error('Please enter a description');
+      }
+
+      // Add journey to Firestore
+      const journeyData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        photos: formData.photos || [],
+        userId: currentUser.uid,
+        createdAt: new Date().toISOString()
+      };
+      
+      console.log('Saving journey data:', journeyData);
+      
+      try {
+        const docRef = await addDoc(collection(db, 'journeys'), journeyData);
+        console.log('Journey saved with ID:', docRef.id);
+        
+        // Reset form and close panel first
+        setFormData({ title: '', description: '', photos: [] });
+        setIsPanelOpen(false);
+        
+        // Then reload journeys
+        await loadJourneys();
+      } catch (firestoreError) {
+        console.error('Firestore error details:', {
+          code: firestoreError.code,
+          message: firestoreError.message,
+          stack: firestoreError.stack
+        });
+        throw new Error('Failed to save journey. Please check your internet connection and try again.');
+      }
+    } catch (error) {
+      console.error('Error saving journey:', error);
+      setError(error.message || 'An error occurred while saving the journey. Please try again.');
+    }
   };
 
   const handlePlanetClick = async (journey, e) => {
@@ -135,28 +361,53 @@ const PlanetsPage = () => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    await updateJourney(viewPanelJourney.id, formData);
-    await loadJourneys();
-    setViewPanelJourney(await getJourney(viewPanelJourney.id));
-    setViewPanelMode('view');
-    setIsEditMode(false);
-    setFormData({ title: '', description: '', photos: [] });
+    try {
+      setError('');
+      // Update journey in Firestore
+      const journeyRef = doc(db, 'journeys', viewPanelJourney.id);
+      await updateDoc(journeyRef, formData);
+      await loadJourneys();
+      const updatedJourney = await getJourney(viewPanelJourney.id);
+      if (updatedJourney) {
+        setViewPanelJourney(updatedJourney);
+      }
+      setViewPanelMode('view');
+      setIsEditMode(false);
+      setFormData({ title: '', description: '', photos: [] });
+    } catch (error) {
+      handleError(error, setError);
+    }
   };
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this journey?')) {
-      await deleteJourney(viewPanelJourney.id);
-      await loadJourneys();
-      setIsViewPanelOpen(false);
+      try {
+        setError('');
+        // Delete journey from Firestore
+        await deleteDoc(doc(db, 'journeys', viewPanelJourney.id));
+        await loadJourneys();
+        setIsViewPanelOpen(false);
+      } catch (error) {
+        handleError(error, setError);
+      }
     }
   };
 
-  const getPlanetClass = (index) => {
+  const getPlanetClass = (journeyId) => {
     const classes = [
       'planet-1', 'planet-2', 'planet-3', 'planet-4',
       'planet-5', 'planet-6', 'planet-7', 'planet-8'
     ];
-    return classes[index % classes.length];
+    // Use journey ID to determine planet class
+    const hash = journeyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return classes[hash % classes.length];
+  };
+
+  const getPlanetImage = (journeyId) => {
+    // Use journey ID to determine planet image
+    const hash = journeyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const planetNumber = (hash % 8) + 1;
+    return `/p${planetNumber}.png`;
   };
 
   const getPlanetPosition = (index) => {
@@ -166,25 +417,6 @@ const PlanetsPage = () => {
       'bottom-20 right-30', 'top-35 left-25'
     ];
     return positions[index % positions.length];
-  };
-
-  const getAllJourneyPhotos = () => {
-    console.log('Getting all journey photos from journeys:', journeys);
-    const photos = journeys.reduce((photos, journey) => {
-      if (journey.photos && Array.isArray(journey.photos)) {
-        // Convert File objects to URLs if needed
-        const journeyPhotos = journey.photos.map(photo => {
-          if (photo instanceof File) {
-            return URL.createObjectURL(photo);
-          }
-          return photo;
-        });
-        return [...photos, ...journeyPhotos];
-      }
-      return photos;
-    }, []);
-    console.log('Collected photos:', photos);
-    return photos;
   };
 
   const openNewJourneyPanel = () => {
@@ -204,42 +436,80 @@ const PlanetsPage = () => {
     }
   }, [isPanelOpen, pendingPanelAlign]);
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      setError('Failed to log out');
+    }
+  };
+
   return (
     <div className="planets-page">
-      <div className="planets-container">
-        {journeys.map((journey, index) => (
-          <div
-            key={journey.id}
-            className={`planet ${getPlanetClass(index)} ${getPlanetPosition(index)}`}
-            onClick={e => handlePlanetClick(journey, e)}
-            style={{ position: 'absolute' }}
-            onMouseEnter={e => {
-              const label = e.currentTarget.querySelector('.planet-label');
-              if (label) label.classList.add('show');
-            }}
-            onMouseLeave={e => {
-              const label = e.currentTarget.querySelector('.planet-label');
-              if (label) label.classList.remove('show');
-            }}
+      {error && (
+        <div className="error-banner">
+          {error}
+          <button 
+            className="error-close-btn"
+            onClick={() => setError('')}
           >
-            <div className="planet-label">{journey.title}</div>
+            ×
+          </button>
+        </div>
+      )}
+      <div className="planets-container">
+        <button
+          className="logout-btn"
+          onClick={handleLogout}
+        >
+          <FaSignOutAlt />
+          Logout
+        </button>
+        {journeys && journeys.length > 0 ? (
+          journeys.map((journey, index) => (
+            <div
+              key={journey.id}
+              className={`planet ${getPlanetClass(journey.id)} ${getPlanetPosition(index)}`}
+              onClick={e => handlePlanetClick(journey, e)}
+              onMouseEnter={e => {
+                const label = e.currentTarget.querySelector('.planet-label');
+                if (label) label.classList.add('show');
+              }}
+              onMouseLeave={e => {
+                const label = e.currentTarget.querySelector('.planet-label');
+                if (label) label.classList.remove('show');
+              }}
+            >
+              <div className="planet-label">{journey.title}</div>
+            </div>
+          ))
+        ) : (
+          <div className="no-journeys-message">
+            No journeys yet. Click "New Journey" to create one!
           </div>
-        ))}
-        {/* Bottom center button row, center-aligned vertically */}
+        )}
+        {/* Bottom center button row */}
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 40, zIndex: 30, display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '32px', pointerEvents: 'none', height: 60 }}>
           <button
             ref={buttonRef}
             className="new-journey-btn"
             onClick={openNewJourneyPanel}
-            style={{ display: isPanelOpen ? 'none' : 'block', whiteSpace: 'nowrap', pointerEvents: isPanelOpen ? 'none' : 'auto', alignSelf: 'center' }}
+            style={{
+              whiteSpace: 'nowrap',
+              pointerEvents: isPanelOpen ? 'none' : 'auto',
+              alignSelf: 'center',
+              opacity: isPanelOpen ? 0.5 : 1,
+              cursor: isPanelOpen ? 'not-allowed' : 'pointer'
+            }}
           >
             New Journey
           </button>
           <div style={{ alignSelf: 'center', pointerEvents: 'auto' }}>
             <SummaryButton
-              planets={journeys.map(journey => ({
+              planets={journeys.map((journey) => ({
                 title: journey.title,
-                color: getPlanetClass(journeys.indexOf(journey))
+                class: getPlanetClass(journey.id)
               }))}
               journeyPhotos={getAllJourneyPhotos()}
             />
@@ -253,9 +523,8 @@ const PlanetsPage = () => {
             display: isPanelOpen ? 'flex' : 'none',
             position: 'fixed',
             left: '50%',
-            bottom: 40,
+            bottom: '140px',
             transform: 'translateX(-50%)',
-            marginBottom: 0,
             pointerEvents: isPanelOpen ? 'auto' : 'none',
             zIndex: 40
           }}
@@ -265,7 +534,10 @@ const PlanetsPage = () => {
           <button
             type="button"
             className="close-panel-btn"
-            onClick={() => { setIsPanelOpen(false); setFormData({ title: '', description: '', photos: [] }); }}
+            onClick={() => { 
+              setIsPanelOpen(false); 
+              setFormData({ title: '', description: '', photos: [] }); 
+            }}
             aria-label="Close"
           >
             <FaTimes />
@@ -284,7 +556,7 @@ const PlanetsPage = () => {
             {[0, 1, 2, 3].map(i => (
               <div key={i} className="panel-photo-box" onClick={i === 0 ? handlePhotoClick : undefined}>
                 {formData.photos[i] ? (
-                  <img src={URL.createObjectURL(formData.photos[i])} alt="preview" />
+                  <img src={formData.photos[i]} alt="preview" />
                 ) : i === 0 ? (
                   <FaCamera className="panel-camera-icon" />
                 ) : null}
@@ -307,7 +579,13 @@ const PlanetsPage = () => {
             placeholder="| What happened during the trip..."
             required
           />
-          <button type="submit" className="new-journey-btn panel-save-btn" style={{ margin: '0 auto', marginTop: '1.2rem', display: 'block', minWidth: 120, pointerEvents: 'auto' }}>Save</button>
+          <button 
+            type="submit" 
+            className="new-journey-btn panel-save-btn" 
+            style={{ margin: '0 auto', marginTop: '1.2rem', display: 'block', minWidth: 120, pointerEvents: 'auto' }}
+          >
+            Save
+          </button>
         </form>
         {/* View/Edit panel for existing journey, next to planet, never overflows */}
         {isViewPanelOpen && viewPanelJourney && (
@@ -343,7 +621,7 @@ const PlanetsPage = () => {
                     {[0, 1, 2, 3].map(i => (
                       <div key={i} className="panel-photo-box" onClick={i === 0 ? handlePhotoClick : undefined}>
                         {formData.photos[i] ? (
-                          <img src={URL.createObjectURL(formData.photos[i])} alt="preview" />
+                          <img src={getImageUrl(formData.photos[i])} alt="preview" />
                         ) : i === 0 ? (
                           <FaCamera className="panel-camera-icon" />
                         ) : null}
@@ -375,7 +653,7 @@ const PlanetsPage = () => {
                     {viewPanelJourney.photos && viewPanelJourney.photos.length > 0 ? (
                       viewPanelJourney.photos.slice(0, 4).map((photo, i) => (
                         <div key={i} className="panel-photo-box">
-                          <img src={URL.createObjectURL(photo)} alt={`Journey photo ${i + 1}`} />
+                          <img src={getImageUrl(photo)} alt={`Journey photo ${i + 1}`} />
                         </div>
                       ))
                     ) : (

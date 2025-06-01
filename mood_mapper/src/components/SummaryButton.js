@@ -1,78 +1,171 @@
-import React, { useState } from 'react';
-import { FaDownload, FaTimes } from 'react-icons/fa';
+import React, { useState, useRef } from 'react';
+import { FaDownload, FaTimes, FaPlay } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext';
 import './SummaryButton.css';
 
 const SummaryButton = ({ planets, journeyPhotos }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [summaryImage, setSummaryImage] = useState(null);
+  const canvasRef = useRef(null);
+  const { currentUser } = useAuth();
 
   const generateSummary = async () => {
-    console.log('Starting summary generation...');
-    console.log('Planets:', planets);
-    console.log('Journey Photos:', journeyPhotos);
-    
     setIsGenerating(true);
     
     try {
-      // Create a canvas for the summary image
-      const canvas = document.createElement('canvas');
+      const canvas = canvasRef.current;
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
       
-      // Set canvas size to match screen dimensions
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
-      // Draw background mosaic
-      await drawBackgroundMosaic(ctx, canvas.width, canvas.height, journeyPhotos);
-      
-      // Add dark overlay
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw planets and titles
-      drawPlanets(ctx, planets, canvas.width, canvas.height);
-      
-      // Add title
-      const currentYear = new Date().getFullYear();
+      const canvasWidth = 800;
+      const canvasHeight = 600;
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      // Define layout dimensions
+      const separatorX = canvasWidth * 0.6 + 30; // Moved right by 30px
+      const leftSectionWidth = separatorX;
+      const rightSectionWidth = canvasWidth - separatorX;
+      const padding = 40; // Horizontal padding
+
+      // Draw background
+      await drawBackground(ctx, canvasWidth, canvasHeight);
+
+      // --- Left Section: Title + Orbit + Planets ---
+
+      // Draw title with different font sizes
       ctx.fillStyle = 'white';
-      const title = `${currentYear} Journey Rewind`;
+      ctx.textAlign = 'left';
+
+      // Main title text
+      ctx.font = 'bold 36px "Ledger", serif';
+      const titleLines = ["Travel", "Around", "2025"];
+      const lineHeight = 40;
+      const startY = 80;
+      titleLines.forEach((line, index) => {
+        ctx.fillText(line, padding, startY + index * lineHeight);
+      });
+
+      // User name with smaller and thinner font
+      ctx.font = '300 20px "Ledger", serif'; // Reduced size and made thinner
+      ctx.fillText(currentUser?.username || 'User Name', padding, startY + 3 * lineHeight);
+
+      // Draw tilted elliptical orbit and planets
+      // Orbit parameters - adjusted for top-right to bottom-left orientation
+      const orbitCenterX = leftSectionWidth / 2 + 30; // Moved right by 30px
+      const orbitCenterY = canvasHeight * 0.6;
+      const orbitRadiusX = 200;
+      const orbitRadiusY = 120;
+      const orbitTiltAngle = -Math.PI / 4; // -45 degrees for top-right to bottom-left
+
+      // Add ambient glow around orbit
+      ctx.beginPath();
+      ctx.ellipse(orbitCenterX, orbitCenterY, orbitRadiusX, orbitRadiusY, orbitTiltAngle, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(120, 180, 255, 0.15)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
       
-      // Calculate title size to fit
-      let fontSize = 32;
-      const maxWidth = canvas.width - 160; // Leave 80px margin on each side
-      const maxHeight = 100; // Maximum height for title area
-      
-      // Measure text and adjust font size if needed
-      ctx.font = `bold ${fontSize}px Arial`;
-      let titleWidth = ctx.measureText(title).width;
-      
-      // Reduce font size if title is too wide
-      while (titleWidth > maxWidth && fontSize > 20) {
-        fontSize -= 2;
-        ctx.font = `bold ${fontSize}px Arial`;
-        titleWidth = ctx.measureText(title).width;
+      // Draw main orbit line
+      ctx.beginPath();
+      ctx.ellipse(orbitCenterX, orbitCenterY, orbitRadiusX, orbitRadiusY, orbitTiltAngle, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Draw planets on orbit with varied size and asymmetry
+      const planetsToDraw = planets.slice(0, 8);
+      for (const [index, planet] of planetsToDraw.entries()) {
+        let angle;
+        if (planetsToDraw.length <= 1) {
+          angle = Math.PI / 2;
+        } else {
+          const baseAngle = (index / planetsToDraw.length) * Math.PI * 2;
+          const asymmetryFactor = Math.sin(baseAngle * 2) * 0.2;
+          angle = baseAngle + asymmetryFactor;
+        }
+
+        const x = orbitCenterX + orbitRadiusX * Math.cos(angle) * Math.cos(orbitTiltAngle) - orbitRadiusY * Math.sin(angle) * Math.sin(orbitTiltAngle);
+        const y = orbitCenterY + orbitRadiusX * Math.cos(angle) * Math.sin(orbitTiltAngle) + orbitRadiusY * Math.sin(angle) * Math.cos(orbitTiltAngle);
+
+        const size = 20 + Math.sin(angle * 2) * 10 + (index % 2) * 5;
+        await drawPlanet(ctx, x, y, size, planet.class);
       }
-      
-      // Center the title horizontally
-      const titleX = (canvas.width - titleWidth) / 2;
-      
-      // Center the title vertically in the top portion of the image
-      const titleY = Math.max(fontSize + 20, 60); // Keep it in the top portion but centered
-      
-      // Draw title with shadow for better visibility
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
-      ctx.fillText(title, titleX, titleY);
-      
-      // Reset shadow
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-      
-      // Convert canvas to image
+
+      // --- Right Section: Featured Journeys ---
+
+      // Draw vertical separator line
+      const firstPhotoY = 60;
+      const tripHeight = 180;
+      const separatorTop = firstPhotoY;
+      const separatorBottom = firstPhotoY + 3 * tripHeight - (tripHeight - 100) + 25;
+
+      ctx.beginPath();
+      ctx.moveTo(separatorX, separatorTop);
+      ctx.lineTo(separatorX, separatorBottom);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Draw three trips on the right with adjusted photo dimensions
+      const featuredTrips = planets.slice(0, 3);
+      const startX = separatorX + padding + 10;
+      const startYTrips = firstPhotoY - 10; // Moved up by 10px
+      const tripSpacingY = tripHeight;
+      const photoWidth = 200;
+      const photoHeight = 127;
+
+      for (let i = 0; i < featuredTrips.length; i++) {
+        const trip = featuredTrips[i];
+        const y = startYTrips + i * tripSpacingY;
+
+        // Draw photo with new dimensions
+        const photo = journeyPhotos[planets.indexOf(trip)];
+        if (photo) {
+          const img = new Image();
+          img.src = typeof photo === 'string' ? photo : URL.createObjectURL(photo);
+          await new Promise((resolve, reject) => {
+            img.onload = () => {
+              // Create clip path for the photo frame
+              ctx.save();
+              ctx.beginPath();
+              ctx.rect(startX, y, photoWidth, photoHeight);
+              ctx.clip();
+
+              // Calculate dimensions to fill the frame while maintaining aspect ratio
+              const aspectRatio = img.width / img.height;
+              let drawWidth = photoWidth;
+              let drawHeight = photoHeight;
+              
+              if (aspectRatio > photoWidth / photoHeight) {
+                // Image is wider than target ratio - fit to height and crop width
+                drawWidth = photoHeight * aspectRatio;
+                const xOffset = startX + (photoWidth - drawWidth) / 2;
+                ctx.drawImage(img, xOffset, y, drawWidth, photoHeight);
+              } else {
+                // Image is taller than target ratio - fit to width and crop height
+                drawHeight = photoWidth / aspectRatio;
+                const yOffset = y + (photoHeight - drawHeight) / 2;
+                ctx.drawImage(img, startX, yOffset, photoWidth, drawHeight);
+              }
+              
+              ctx.restore();
+              resolve();
+            };
+            img.onerror = reject;
+          });
+        } else {
+          // Draw gray placeholder box
+          ctx.fillStyle = '#e0e0e0';
+          ctx.fillRect(startX, y, photoWidth, photoHeight);
+        }
+
+        // Draw title below photo with smaller font
+        ctx.fillStyle = 'white';
+        ctx.font = '16px "Ledger", serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(trip.title, startX, y + photoHeight + 25);
+      }
+
       const imageUrl = canvas.toDataURL('image/png');
       setSummaryImage(imageUrl);
     } catch (error) {
@@ -82,63 +175,122 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
     }
   };
 
-  const drawBackgroundMosaic = async (ctx, width, height, photos) => {
-    if (!photos || photos.length === 0) {
-      console.log('No photos to draw');
-      return;
+  const drawBackground = async (ctx, width, height) => {
+    // Draw radial gradient with more natural color stops
+    const radialGradient = ctx.createRadialGradient(
+      width * 0.6, height * 0.4, 0,
+      width * 0.6, height * 0.4, Math.max(width, height) * 0.8
+    );
+    radialGradient.addColorStop(0, 'rgba(255, 140, 60, 0.15)');
+    radialGradient.addColorStop(0.2, 'rgba(40, 80, 180, 0.12)');
+    radialGradient.addColorStop(0.4, 'rgba(0, 30, 60, 0.5)');
+    radialGradient.addColorStop(0.7, '#0a0a2a');
+    radialGradient.addColorStop(1, '#000');
+    
+    ctx.fillStyle = radialGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // Add a subtle linear gradient overlay
+    const linearGradient = ctx.createLinearGradient(0, 0, width, height);
+    linearGradient.addColorStop(0, 'rgba(10, 10, 42, 0.8)');
+    linearGradient.addColorStop(0.4, 'rgba(26, 34, 63, 0.6)');
+    linearGradient.addColorStop(0.7, 'rgba(46, 46, 56, 0.7)');
+    linearGradient.addColorStop(1, 'rgba(10, 10, 42, 0.8)');
+    
+    ctx.fillStyle = linearGradient;
+    ctx.globalCompositeOperation = 'soft-light';
+    ctx.fillRect(0, 0, width, height);
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Add stars with varying sizes - reduced count and smaller size
+    const starCount = 700; // Reduced from 2000 to about 1/3
+    for (let i = 0; i < starCount; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      // Create a distribution of star sizes - all sizes reduced
+      const size = Math.random() < 0.1 ? Math.random() * 1 + 0.5 : // 10% chance of larger stars
+                  Math.random() < 0.3 ? Math.random() * 0.5 + 0.3 : // 30% chance of medium stars
+                  Math.random() * 0.3; // 60% chance of small stars
+      
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; // More transparent stars
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
     }
+  };
+
+  const drawPlanet = async (ctx, x, y, size, planetClass) => {
+    // Get planet number from class
+    const planetNumber = parseInt(planetClass.split('-')[1]);
+
+    // Load planet image from public folder
+    const img = new Image();
+    img.src = `/p${planetNumber}.png`;
     
-    const gridSize = 4; // 4x4 grid
-    const cellWidth = width / gridSize;
-    const cellHeight = height / gridSize;
-    
-    // If we have fewer photos than grid cells, repeat them
-    const totalCells = gridSize * gridSize;
-    const repeatedPhotos = [];
-    for (let i = 0; i < totalCells; i++) {
-      repeatedPhotos.push(photos[i % photos.length]);
-    }
-    
-    console.log('Drawing mosaic with photos:', repeatedPhotos);
-    
-    // Create a temporary canvas for blur effect
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    
-    // Draw photos to temporary canvas
-    for (let i = 0; i < repeatedPhotos.length; i++) {
-      const row = Math.floor(i / gridSize);
-      const col = i % gridSize;
-      
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      // Handle both File objects and URLs
-      const photoSrc = repeatedPhotos[i];
-      img.src = typeof photoSrc === 'string' ? photoSrc : URL.createObjectURL(photoSrc);
-      
-      try {
-        await new Promise((resolve, reject) => {
-          img.onload = () => {
-            tempCtx.drawImage(img, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
-            resolve();
-          };
-          img.onerror = (error) => {
-            console.error('Error loading image:', error);
-            reject(error);
-          };
+    await new Promise((resolve, reject) => {
+      img.onload = () => {
+        // Draw circular clip path
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.clip();
+        
+        // Calculate dimensions to maintain aspect ratio
+        const aspectRatio = img.width / img.height;
+        let drawWidth = size * 2;
+        let drawHeight = size * 2;
+        
+        if (aspectRatio > 1) {
+          // Image is wider than tall
+          drawHeight = drawWidth / aspectRatio;
+        } else {
+          // Image is taller than wide
+          drawWidth = drawHeight * aspectRatio;
+        }
+        
+        // Center the image
+        const xOffset = x - drawWidth / 2;
+        const yOffset = y - drawHeight / 2;
+        
+        ctx.drawImage(img, xOffset, yOffset, drawWidth, drawHeight);
+        ctx.restore();
+        
+        // Add glow
+        ctx.shadowColor = 'rgba(120, 180, 255, 0.4)';
+        ctx.shadowBlur = size * 0.8;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        
+        resolve();
+      };
+      img.onerror = () => {
+        // Fallback to gradient if image fails to load
+        const gradient = ctx.createRadialGradient(
+          x - size/3, y - size/3, 0,
+          x, y, size
+        );
+        
+        const colors = getPlanetGradient(planetClass);
+        colors.forEach((color, i) => {
+          gradient.addColorStop(i / (colors.length - 1), color);
         });
-      } catch (error) {
-        console.error('Error drawing image:', error);
-      }
-    }
-    
-    // Apply blur effect
-    ctx.filter = 'blur(8px)';
-    ctx.drawImage(tempCanvas, 0, 0);
-    ctx.filter = 'none';
+        
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // Add glow
+        ctx.shadowColor = 'rgba(120, 180, 255, 0.4)';
+        ctx.shadowBlur = size * 0.8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        resolve();
+      };
+    });
   };
 
   const getPlanetGradient = (planetClass) => {
@@ -155,102 +307,11 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
     return gradients[planetClass] || ['#ffffff', '#cccccc', '#999999'];
   };
 
-  const drawPlanets = (ctx, planets, canvasWidth, canvasHeight) => {
-    console.log('Drawing planets:', planets);
-    
-    // Calculate spacing based on number of planets
-    const totalWidth = canvasWidth - 200; // Leave margins
-    const spacing = totalWidth / (planets.length + 1);
-    
-    planets.forEach((planet, index) => {
-      const x = 100 + spacing * (index + 1);
-      const y = canvasHeight * 0.4; // Position planets at 40% of canvas height
-      const size = 40 + (index % 3) * 10; // Vary planet sizes
-      
-      // Create gradient for planet
-      const gradient = ctx.createRadialGradient(
-        x - size/3, y - size/3, 0,
-        x, y, size
-      );
-      
-      const colors = getPlanetGradient(planet.color);
-      colors.forEach((color, i) => {
-        gradient.addColorStop(i / (colors.length - 1), color);
-      });
-      
-      // Draw planet with gradient
-      ctx.beginPath();
-      ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-      
-      // Add inner shadow
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = -5;
-      ctx.shadowOffsetY = -5;
-      ctx.fill();
-      
-      // Add outer glow
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-      ctx.shadowBlur = 20;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-      ctx.fill();
-      
-      // Reset shadow
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-      
-      // Draw title with wrapping
-      ctx.fillStyle = 'white';
-      ctx.textAlign = 'center';
-      
-      // Calculate font size based on title length
-      let fontSize = 16;
-      ctx.font = `${fontSize}px Arial`;
-      let titleWidth = ctx.measureText(planet.title).width;
-      
-      // Reduce font size if title is too wide
-      while (titleWidth > spacing - 20 && fontSize > 12) {
-        fontSize -= 1;
-        ctx.font = `${fontSize}px Arial`;
-        titleWidth = ctx.measureText(planet.title).width;
-      }
-      
-      // Split title into multiple lines if needed
-      const maxWidth = spacing - 20;
-      const words = planet.title.split(' ');
-      let line = '';
-      let lines = [];
-      
-      for (let word of words) {
-        const testLine = line + word + ' ';
-        const metrics = ctx.measureText(testLine);
-        
-        if (metrics.width > maxWidth && line !== '') {
-          lines.push(line);
-          line = word + ' ';
-        } else {
-          line = testLine;
-        }
-      }
-      lines.push(line);
-      
-      // Draw each line
-      lines.forEach((line, i) => {
-        ctx.fillText(line.trim(), x, y + size + 20 + (i * (fontSize + 4)));
-      });
-    });
-  };
-
   const downloadSummary = () => {
     if (!summaryImage) return;
     
     const link = document.createElement('a');
-    link.download = `journey-rewind-${new Date().getFullYear()}.png`;
+    link.download = 'journey-summary.png';
     link.href = summaryImage;
     link.click();
   };
@@ -260,36 +321,32 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
   };
 
   return (
-    <>
+    <div className="summary-container">
       <button 
-        className="summary-fab"
+        className="summary-btn"
         onClick={generateSummary}
         disabled={isGenerating}
       >
-        <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-          <polygon points="10,7 25,16 10,25" stroke="white" strokeWidth="2.5" fill="none" strokeLinejoin="round" style={{ opacity: 0.7 }} />
-        </svg>
+        <FaPlay className="summary-play-icon" />
       </button>
       
       {summaryImage && (
-        <div className="summary-modal">
+        <div className="summary-overlay">
           <div className="summary-content">
-            <div className="summary-header">
-              <h2 className="summary-title">{new Date().getFullYear()} Journey Rewind</h2>
-              <div className="summary-actions">
-                <button className="icon-button download-icon" onClick={downloadSummary}>
-                  <FaDownload />
-                </button>
-                <button className="icon-button close-icon" onClick={closeSummary}>
-                  <FaTimes />
-                </button>
-              </div>
-            </div>
             <img src={summaryImage} alt="Journey Summary" />
+            <div className="summary-actions">
+              <button onClick={downloadSummary}>
+                <FaDownload /> Download
+              </button>
+              <button onClick={closeSummary}>
+                <FaTimes /> Close
+              </button>
+            </div>
           </div>
         </div>
       )}
-    </>
+      <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
+    </div>
   );
 };
 
