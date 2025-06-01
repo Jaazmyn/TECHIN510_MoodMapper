@@ -63,25 +63,39 @@
 }
 
 /* Planet positions */
+.top-15 { top: 15%; }
 .top-20 { top: 20%; }
 .top-25 { top: 25%; }
 .top-30 { top: 30%; }
 .top-35 { top: 35%; }
 .top-40 { top: 40%; }
+.top-45 { top: 45%; }
+.top-50 { top: 50%; }
+.top-55 { top: 55%; }
+.top-60 { top: 60%; }
 
+.bottom-10 { bottom: 10%; }
+.bottom-15 { bottom: 15%; }
 .bottom-20 { bottom: 20%; }
 .bottom-25 { bottom: 25%; }
 .bottom-30 { bottom: 30%; }
+.bottom-35 { bottom: 35%; }
 
+.left-10 { left: 10%; }
 .left-15 { left: 15%; }
 .left-20 { left: 20%; }
 .left-25 { left: 25%; }
 .left-30 { left: 30%; }
+.left-35 { left: 35%; }
+.left-40 { left: 40%; }
 
 .right-15 { right: 15%; }
 .right-20 { right: 20%; }
 .right-25 { right: 25%; }
 .right-30 { right: 30%; }
+.right-35 { right: 35%; }
+.right-40 { right: 40%; }
+.right-45 { right: 45%; }
 
 /* Planet styles */
 .planet-1 { width: 65px; height: 65px; animation-delay: 0s; background-image: url('../../public/p1.png'); }

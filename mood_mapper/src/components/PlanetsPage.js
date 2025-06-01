@@ -20,6 +20,8 @@ import { handleError } from '../utils/errorHandling';
 import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
+const MAX_PHOTOS = 20;
+
 const PlanetsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -33,6 +35,7 @@ const PlanetsPage = () => {
   const [journeys, setJourneys] = useState([]);
   const [selectedJourney, setSelectedJourney] = useState(null);
   const fileInputRef = useRef(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const panelRef = useRef(null);
   const buttonRef = useRef(null);
   const [isViewPanelOpen, setIsViewPanelOpen] = useState(false);
@@ -229,9 +232,19 @@ const PlanetsPage = () => {
     });
   };
 
+  const handlePhotoClick = (index) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.dataset.index = index;
+      fileInputRef.current.click();
+    }
+  };
+
   const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files).slice(0, 4);
+    const files = Array.from(e.target.files);
     if (files.length === 0) return;
+
+    // Get the index of the clicked photo box
+    const index = parseInt(e.target.dataset.index) || 0;
 
     // Convert files to base64 strings and compress
     const processFiles = async () => {
@@ -253,7 +266,18 @@ const PlanetsPage = () => {
             });
           })
         );
-        setFormData(prev => ({ ...prev, photos: processedFiles }));
+        
+        // Update photos array, preserving existing photos
+        setFormData(prev => {
+          const newPhotos = [...(prev.photos || [])];
+          // Insert new photos at the clicked index
+          processedFiles.forEach((photo, i) => {
+            if (index + i < MAX_PHOTOS) { // Ensure we don't exceed max photos
+              newPhotos[index + i] = photo;
+            }
+          });
+          return { ...prev, photos: newPhotos };
+        });
       } catch (error) {
         console.error('Error processing files:', error);
         setError('Error processing photos. Please try again.');
@@ -262,8 +286,47 @@ const PlanetsPage = () => {
     processFiles();
   };
 
-  const handlePhotoClick = () => {
-    fileInputRef.current.click();
+  const renderPhotoRows = (photos = []) => {
+    const rows = [];
+    const totalPhotos = photos.length;
+    const totalRows = Math.ceil(Math.max(1, totalPhotos + 1) / 4);
+
+    for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+      const rowPhotos = [];
+      const startIndex = rowIndex * 4;
+      const isLastRow = rowIndex === totalRows - 1;
+      const hasPhotosInRow = totalPhotos > startIndex;
+
+      // Add photo boxes for this row
+      for (let i = 0; i < 4; i++) {
+        const photoIndex = startIndex + i;
+        const hasPhoto = photoIndex < totalPhotos;
+        const showCamera = !hasPhoto && 
+          (isLastRow || (hasPhotosInRow && photoIndex === totalPhotos));
+
+        rowPhotos.push(
+          <div 
+            key={photoIndex}
+            className="panel-photo-box" 
+            onClick={() => showCamera && handlePhotoClick(photoIndex)}
+          >
+            {hasPhoto ? (
+              <img src={photos[photoIndex]} alt={`Photo ${photoIndex + 1}`} />
+            ) : showCamera ? (
+              <FaCamera className="panel-camera-icon" />
+            ) : null}
+          </div>
+        );
+      }
+
+      rows.push(
+        <div key={rowIndex} className="panel-photo-row">
+          {rowPhotos}
+        </div>
+      );
+    }
+
+    return rows;
   };
 
   const handleSave = async (e) => {
@@ -380,16 +443,14 @@ const PlanetsPage = () => {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this journey?')) {
-      try {
-        setError('');
-        // Delete journey from Firestore
-        await deleteDoc(doc(db, 'journeys', viewPanelJourney.id));
-        await loadJourneys();
-        setIsViewPanelOpen(false);
-      } catch (error) {
-        handleError(error, setError);
-      }
+    try {
+      setError('');
+      // Delete journey from Firestore
+      await deleteDoc(doc(db, 'journeys', viewPanelJourney.id));
+      await loadJourneys();
+      setIsViewPanelOpen(false);
+    } catch (error) {
+      handleError(error, setError);
     }
   };
 
@@ -410,13 +471,38 @@ const PlanetsPage = () => {
     return `/p${planetNumber}.png`;
   };
 
-  const getPlanetPosition = (index) => {
+  const getPlanetPosition = (journeyId) => {
+    // Use journey ID to generate a consistent position
+    const hash = journeyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    
+    // Define position combinations that ensure good spacing
     const positions = [
-      'top-20 left-20', 'top-30 right-25', 'bottom-25 left-15',
-      'top-40 right-15', 'bottom-30 right-20', 'top-25 left-30',
-      'bottom-20 right-30', 'top-35 left-25'
+      // Top section
+      'top-15 left-10',
+      'top-20 right-15',
+      'top-25 left-25',
+      'top-30 right-30',
+      'top-35 left-40',
+      'top-40 right-45',
+      
+      // Middle section
+      'top-45 left-15',
+      'top-50 right-20',
+      'top-55 left-35',
+      'top-60 right-40',
+      
+      // Bottom section
+      'bottom-35 left-15',
+      'bottom-30 right-25',
+      'bottom-25 left-35',
+      'bottom-20 right-45',
+      'bottom-15 left-20',
+      'bottom-10 right-30'
     ];
-    return positions[index % positions.length];
+    
+    // Use hash to select position, with more variation
+    const positionIndex = (hash * 7) % positions.length; // Multiply by prime number for better distribution
+    return positions[positionIndex];
   };
 
   const openNewJourneyPanel = () => {
@@ -467,10 +553,10 @@ const PlanetsPage = () => {
           Logout
         </button>
         {journeys && journeys.length > 0 ? (
-          journeys.map((journey, index) => (
+          journeys.map((journey) => (
             <div
               key={journey.id}
-              className={`planet ${getPlanetClass(journey.id)} ${getPlanetPosition(index)}`}
+              className={`planet ${getPlanetClass(journey.id)} ${getPlanetPosition(journey.id)}`}
               onClick={e => handlePlanetClick(journey, e)}
               onMouseEnter={e => {
                 const label = e.currentTarget.querySelector('.planet-label');
@@ -552,17 +638,10 @@ const PlanetsPage = () => {
             autoFocus
             required
           />
-          <div className="panel-photo-row">
-            {[0, 1, 2, 3].map(i => (
-              <div key={i} className="panel-photo-box" onClick={i === 0 ? handlePhotoClick : undefined}>
-                {formData.photos[i] ? (
-                  <img src={formData.photos[i]} alt="preview" />
-                ) : i === 0 ? (
-                  <FaCamera className="panel-camera-icon" />
-                ) : null}
-              </div>
-            ))}
+          <div className="panel-photo-grid">
+            {renderPhotoRows(formData.photos)}
             <input
+              key={fileInputKey}
               ref={fileInputRef}
               type="file"
               accept="image/*"
@@ -617,17 +696,10 @@ const PlanetsPage = () => {
                     autoFocus
                     required
                   />
-                  <div className="panel-photo-row">
-                    {[0, 1, 2, 3].map(i => (
-                      <div key={i} className="panel-photo-box" onClick={i === 0 ? handlePhotoClick : undefined}>
-                        {formData.photos[i] ? (
-                          <img src={getImageUrl(formData.photos[i])} alt="preview" />
-                        ) : i === 0 ? (
-                          <FaCamera className="panel-camera-icon" />
-                        ) : null}
-                      </div>
-                    ))}
+                  <div className="panel-photo-grid">
+                    {renderPhotoRows(formData.photos)}
                     <input
+                      key={fileInputKey}
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
@@ -648,21 +720,35 @@ const PlanetsPage = () => {
                 </>
               ) : (
                 <>
-                  <div className="panel-title-input" style={{ marginBottom: '1.2rem', border: 'none', background: 'none', color: '#fff', fontWeight: 600, fontSize: '1.25rem', cursor: 'default' }}>{viewPanelJourney.title}</div>
-                  <div className="panel-photo-row">
-                    {viewPanelJourney.photos && viewPanelJourney.photos.length > 0 ? (
-                      viewPanelJourney.photos.slice(0, 4).map((photo, i) => (
-                        <div key={i} className="panel-photo-box">
-                          <img src={getImageUrl(photo)} alt={`Journey photo ${i + 1}`} />
-                        </div>
-                      ))
+                  <div className="panel-title-view">{viewPanelJourney.title}</div>
+                  <div className="panel-photo-grid">
+                    {viewPanelMode === 'edit' ? (
+                      renderPhotoRows(formData.photos)
                     ) : (
-                      [0, 1, 2, 3].map(i => (
-                        <div key={i} className="panel-photo-box" style={{ background: 'rgba(255,255,255,0.05)' }} />
-                      ))
+                      <div className="panel-photo-row">
+                        {viewPanelJourney.photos && viewPanelJourney.photos.length > 0 ? (
+                          viewPanelJourney.photos.slice(0, 4).map((photo, i) => (
+                            <div key={i} className="panel-photo-box">
+                              <img src={getImageUrl(photo)} alt={`Journey photo ${i + 1}`} />
+                            </div>
+                          ))
+                        ) : (
+                          [0, 1, 2, 3].map(i => (
+                            <div key={i} className="panel-photo-box" style={{ background: 'rgba(255,255,255,0.05)' }} />
+                          ))
+                        )}
+                      </div>
                     )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      style={{ display: 'none' }}
+                      multiple
+                    />
                   </div>
-                  <div className="panel-description-input" style={{ minHeight: 80, color: '#fff', background: 'none', border: 'none', marginBottom: '1.3rem', cursor: 'default' }}>{viewPanelJourney.description}</div>
+                  <div className="panel-description-view">{viewPanelJourney.description}</div>
                   <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginTop: '1.2rem' }}>
                     <button type="button" className="icon-cosmic-btn" onClick={handleEdit} aria-label="Edit"><FaPen /></button>
                     <button type="button" className="icon-cosmic-btn" onClick={handleDelete} aria-label="Delete"><FaTrash /></button>
