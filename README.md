@@ -18,9 +18,8 @@ MoodMapper is an interactive web-based travel journal that blends emotion, memor
 # Features (updated by Developer 4/11)
 - Homepage – Galaxy View: A dynamic galaxy interface with floating planets, where each planet represents a unique journey.
 - Create Journey (New Planet): Users can create a new journey by entering a title and description, and uploading photos and text. A new planet is formed in the galaxy.
-- AI-Generated Mood Fragments: Once a journey is created, the system categorizes uploaded photos and generates mood fragments that visually and textually represent the emotional essence of the journey.
-- View Journey: Users can click on a planet to explore the journey details, including uploaded content and associated mood fragments.
-- Share Journey Highlights: Generate a shareable overview summarizing journeys from a selected time period (e.g., month or year) to share with friends.
+- View Journey: Users can click on a planet to explore the journey details.
+- Share Journey Highlights: Generate a shareable overview summarizing journeys to share with friends.
 - (Nice to Have) Chatbot Companion: A friendly chatbot at the bottom of the screen that encourages users to reflect and add more details to their journeys.
 
 # Special constraints
