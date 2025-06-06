@@ -34,7 +34,8 @@ const PlanetsPage = () => {
   });
   const [journeys, setJourneys] = useState([]);
   const [selectedJourney, setSelectedJourney] = useState(null);
-  const fileInputRef = useRef(null);
+  const [nextPlanetIndex, setNextPlanetIndex] = useState(0);
+  const newJourneyFileInputRef = useRef(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const panelRef = useRef(null);
   const buttonRef = useRef(null);
@@ -47,6 +48,7 @@ const PlanetsPage = () => {
   const [panelPos, setPanelPos] = useState({ left: '50%', bottom: 120 });
   const [pendingPanelAlign, setPendingPanelAlign] = useState(false);
   const [error, setError] = useState('');
+  const viewPanelFileInputRef = useRef(null);
 
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
@@ -88,6 +90,16 @@ const PlanetsPage = () => {
       console.log('No user logged in');
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    if (journeys.length > 0) {
+      // Find the highest planet index currently in use
+      const maxIndex = Math.max(...journeys.map(j => j.planetIndex ?? 0));
+      setNextPlanetIndex((maxIndex + 1) % 8);
+    } else {
+      setNextPlanetIndex(0);
+    }
+  }, [journeys]);
 
   const getJourney = async (journeyId) => {
     try {
@@ -232,10 +244,11 @@ const PlanetsPage = () => {
     });
   };
 
-  const handlePhotoClick = (index) => {
-    if (fileInputRef.current) {
-      fileInputRef.current.dataset.index = index;
-      fileInputRef.current.click();
+  const handlePhotoClick = (index, isViewPanel = false) => {
+    const fileInput = isViewPanel ? viewPanelFileInputRef.current : newJourneyFileInputRef.current;
+    if (fileInput) {
+      fileInput.dataset.index = index;
+      fileInput.click();
     }
   };
 
@@ -286,7 +299,7 @@ const PlanetsPage = () => {
     processFiles();
   };
 
-  const renderPhotoRows = (photos = []) => {
+  const renderPhotoRows = (photos = [], isViewPanel = false) => {
     const rows = [];
     const totalPhotos = photos.length;
     const totalRows = Math.ceil(Math.max(1, totalPhotos + 1) / 4);
@@ -308,7 +321,7 @@ const PlanetsPage = () => {
           <div 
             key={photoIndex}
             className="panel-photo-box" 
-            onClick={() => showCamera && handlePhotoClick(photoIndex)}
+            onClick={() => showCamera && handlePhotoClick(photoIndex, isViewPanel)}
           >
             {hasPhoto ? (
               <img src={photos[photoIndex]} alt={`Photo ${photoIndex + 1}`} />
@@ -350,13 +363,14 @@ const PlanetsPage = () => {
         throw new Error('Please enter a description');
       }
 
-      // Add journey to Firestore
+      // Add journey to Firestore with the next planet index
       const journeyData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         photos: formData.photos || [],
         userId: currentUser.uid,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        planetIndex: nextPlanetIndex // Store the planet index with the journey
       };
       
       console.log('Saving journey data:', journeyData);
@@ -459,15 +473,17 @@ const PlanetsPage = () => {
       'planet-1', 'planet-2', 'planet-3', 'planet-4',
       'planet-5', 'planet-6', 'planet-7', 'planet-8'
     ];
-    // Use journey ID to determine planet class
-    const hash = journeyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return classes[hash % classes.length];
+    // Find the journey and use its stored planetIndex
+    const journey = journeys.find(j => j.id === journeyId);
+    const index = journey?.planetIndex ?? 0;
+    return classes[index % 8];
   };
 
   const getPlanetImage = (journeyId) => {
-    // Use journey ID to determine planet image
-    const hash = journeyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const planetNumber = (hash % 8) + 1;
+    // Find the journey and use its stored planetIndex
+    const journey = journeys.find(j => j.id === journeyId);
+    const index = journey?.planetIndex ?? 0;
+    const planetNumber = (index % 8) + 1;
     return `/p${planetNumber}.png`;
   };
 
@@ -475,34 +491,45 @@ const PlanetsPage = () => {
     // Use journey ID to generate a consistent position
     const hash = journeyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     
-    // Define position combinations that ensure good spacing
-    const positions = [
-      // Top section
-      'top-15 left-10',
-      'top-20 right-15',
-      'top-25 left-25',
-      'top-30 right-30',
-      'top-35 left-40',
-      'top-40 right-45',
+    // Define a grid of positions with proper spacing
+    // Each position is represented as [top, left/right] percentages
+    // Minimum 20% padding from edges and between planets
+    const gridPositions = [
+      // Top section (15-40%)
+      { top: '15%', left: '20%' },
+      { top: '15%', right: '20%' },
+      { top: '25%', left: '40%' },
+      { top: '25%', right: '40%' },
+      { top: '35%', left: '20%' },
+      { top: '35%', right: '20%' },
       
-      // Middle section
-      'top-45 left-15',
-      'top-50 right-20',
-      'top-55 left-35',
-      'top-60 right-40',
+      // Middle section (45-60%)
+      { top: '45%', left: '40%' },
+      { top: '45%', right: '40%' },
+      { top: '55%', left: '20%' },
+      { top: '55%', right: '20%' },
       
-      // Bottom section
-      'bottom-35 left-15',
-      'bottom-30 right-25',
-      'bottom-25 left-35',
-      'bottom-20 right-45',
-      'bottom-15 left-20',
-      'bottom-10 right-30'
+      // Bottom section (65-85%)
+      { bottom: '35%', left: '40%' },
+      { bottom: '35%', right: '40%' },
+      { bottom: '25%', left: '20%' },
+      { bottom: '25%', right: '20%' },
+      { bottom: '15%', left: '40%' },
+      { bottom: '15%', right: '40%' }
     ];
     
     // Use hash to select position, with more variation
-    const positionIndex = (hash * 7) % positions.length; // Multiply by prime number for better distribution
-    return positions[positionIndex];
+    const positionIndex = (hash * 7) % gridPositions.length; // Multiply by prime number for better distribution
+    const position = gridPositions[positionIndex];
+    
+    // Convert position object to CSS classes
+    const classes = [];
+    if (position.top) classes.push(`top-${position.top.replace('%', '')}`);
+    if (position.bottom) classes.push(`bottom-${position.bottom.replace('%', '')}`);
+    if (position.left) classes.push(`left-${position.left.replace('%', '')}`);
+    if (position.right) classes.push(`right-${position.right.replace('%', '')}`);
+    
+    return classes.join(' ');
   };
 
   const openNewJourneyPanel = () => {
@@ -595,9 +622,9 @@ const PlanetsPage = () => {
             <SummaryButton
               planets={journeys.map((journey) => ({
                 title: journey.title,
-                class: getPlanetClass(journey.id)
+                class: getPlanetClass(journey.id),
+                photos: journey.photos || []
               }))}
-              journeyPhotos={getAllJourneyPhotos()}
             />
           </div>
         </div>
@@ -642,7 +669,7 @@ const PlanetsPage = () => {
             {renderPhotoRows(formData.photos)}
             <input
               key={fileInputKey}
-              ref={fileInputRef}
+              ref={newJourneyFileInputRef}
               type="file"
               accept="image/*"
               onChange={handleFileUpload}
@@ -697,10 +724,10 @@ const PlanetsPage = () => {
                     required
                   />
                   <div className="panel-photo-grid">
-                    {renderPhotoRows(formData.photos)}
+                    {renderPhotoRows(formData.photos, true)}
                     <input
                       key={fileInputKey}
-                      ref={fileInputRef}
+                      ref={viewPanelFileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleFileUpload}
@@ -723,7 +750,7 @@ const PlanetsPage = () => {
                   <div className="panel-title-view">{viewPanelJourney.title}</div>
                   <div className="panel-photo-grid">
                     {viewPanelMode === 'edit' ? (
-                      renderPhotoRows(formData.photos)
+                      renderPhotoRows(formData.photos, true)
                     ) : (
                       <div className="panel-photo-row">
                         {viewPanelJourney.photos && viewPanelJourney.photos.length > 0 ? (
@@ -740,7 +767,7 @@ const PlanetsPage = () => {
                       </div>
                     )}
                     <input
-                      ref={fileInputRef}
+                      ref={viewPanelFileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleFileUpload}

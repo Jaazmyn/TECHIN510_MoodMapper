@@ -3,7 +3,7 @@ import { FaDownload, FaTimes, FaPlay } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import './SummaryButton.css';
 
-const SummaryButton = ({ planets, journeyPhotos }) => {
+const SummaryButton = ({ planets }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [summaryImage, setSummaryImage] = useState(null);
   const canvasRef = useRef(null);
@@ -52,7 +52,7 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
 
       // Draw tilted elliptical orbit and planets
       // Orbit parameters - adjusted for top-right to bottom-left orientation
-      const orbitCenterX = leftSectionWidth / 2 + 30; // Moved right by 30px
+      const orbitCenterX = leftSectionWidth / 2 + 30;
       const orbitCenterY = canvasHeight * 0.6;
       const orbitRadiusX = 200;
       const orbitRadiusY = 120;
@@ -119,7 +119,7 @@ const SummaryButton = ({ planets, journeyPhotos }) => {
         const y = startYTrips + i * tripSpacingY;
 
         // Draw photo with new dimensions
-        const photo = journeyPhotos[planets.indexOf(trip)];
+        const photo = trip.photos && trip.photos.length > 0 ? trip.photos[0] : null;
         if (photo) {
           const img = new Image();
           img.src = typeof photo === 'string' ? photo : URL.createObjectURL(photo);
